@@ -7,10 +7,10 @@ DuckDuckGo検索でターゲット企業URLを収集し、
 ・フォーム存在確認
 を通過したURLだけをDBに保存する。
 """
+import os
 import httpx
 from urllib.parse import urlparse
 from urllib.robotparser import RobotFileParser
-from duckduckgo_search import DDGS
 from database import get_conn, init_db
 
 # ────────────────────────────────────────────
@@ -255,17 +255,39 @@ def check_has_form(url: str) -> bool:
         return False
 
 
-def search_ddg(query: str, num: int = 10) -> list[dict]:
-    """DuckDuckGo で検索して結果リストを返す（日本語・日本地域に限定）"""
+def search_google(query: str, num: int = 10) -> list[dict]:
+    """Google Custom Search API で検索して結果リストを返す"""
+    api_key = os.getenv("GOOGLE_CSE_API_KEY", "")
+    cx = os.getenv("GOOGLE_CSE_CX", "")
+    if not api_key or not cx:
+        print("[Google CSE] APIキーが未設定")
+        return []
     try:
-        results = DDGS().text(
-            query + " site:co.jp OR site:jp",
-            region="jp-jp",
-            max_results=num * 2  # 多めに取ってフィルタで絞る
-        )
-        return [{"link": r["href"], "title": r.get("title", "")} for r in results]
+        results = []
+        for start in range(1, num * 2, 10):
+            resp = httpx.get(
+                "https://www.googleapis.com/customsearch/v1",
+                params={
+                    "key": api_key,
+                    "cx": cx,
+                    "q": query + " site:co.jp OR site:jp",
+                    "num": min(10, num * 2),
+                    "start": start,
+                    "lr": "lang_ja",
+                },
+                timeout=10,
+            )
+            data = resp.json()
+            items = data.get("items", [])
+            results += [{"link": r["link"], "title": r.get("title", "")} for r in items]
+            if len(items) < 10:
+                break
+            if len(results) >= num * 2:
+                break
+        print(f"[Google CSE] 検索: {query} → {len(results)}件")
+        return results
     except Exception as e:
-        print(f"[DDG] 検索エラー: {e}")
+        print(f"[Google CSE] 検索エラー: {e}")
         return []
 
 
@@ -298,8 +320,8 @@ def collect(industry: str, count: int = 30) -> dict:
         if saved >= count:
             break
 
-        print(f"[DDG] 検索: {query}")
-        items = search_ddg(query, num=count)
+        print(f"[Google CSE] 検索: {query}")
+        items = search_google(query, num=count)
 
         for item in items:
             if saved >= count:

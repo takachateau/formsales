@@ -152,7 +152,10 @@ async def scrape_form(url: str, company_id: int = 0) -> dict:
 
     try:
         async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
+            browser = await p.chromium.launch(
+                headless=True,
+                args=["--no-sandbox", "--disable-setuid-sandbox"],
+            )
             context = await browser.new_context(
                 user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
                            "AppleWebKit/537.36 (KHTML, like Gecko) "
