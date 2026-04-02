@@ -11,7 +11,7 @@ import os
 import httpx
 from urllib.parse import urlparse
 from urllib.robotparser import RobotFileParser
-from duckduckgo_search import DDGS
+from ddgs import DDGS
 from database import get_conn, init_db
 
 # ────────────────────────────────────────────
