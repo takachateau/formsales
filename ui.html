@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>フォーム営業ツール</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic', sans-serif;
+    background: #f1f5f9; color: #111827; min-height: 100vh;
+  }
+
+  header {
+    background: #fff; border-bottom: 1px solid #e5e7eb;
+    padding: 0 36px; height: 56px;
+    display: flex; align-items: center; gap: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.05);
+    position: sticky; top: 0; z-index: 100;
+  }
+  header .logo {
+    width: 28px; height: 28px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6); border-radius: 7px;
+  }
+  header h1 { font-size: 15px; font-weight: 700; }
+  header .version {
+    font-size: 11px; color: #9ca3af;
+    background: #f3f4f6; padding: 2px 7px;
+    border-radius: 20px; border: 1px solid #e5e7eb;
+  }
+
+  .layout { display: grid; grid-template-columns: 200px 1fr; height: calc(100vh - 56px); }
+
+  .sidebar {
+    background: #fff; border-right: 1px solid #e5e7eb;
+    padding: 14px 10px; display: flex; flex-direction: column; gap: 3px; overflow-y: auto;
+  }
+  .nav-label {
+    font-size: 10px; letter-spacing: .08em; color: #9ca3af;
+    text-transform: uppercase; padding: 0 8px; margin: 8px 0 3px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; border-radius: 7px;
+    cursor: pointer; font-size: 13px; color: #6b7280;
+    border: none; background: none; width: 100%;
+    text-align: left; font-weight: 500; transition: all .12s;
+  }
+  .nav-item:hover { background: #f3f4f6; color: #111827; }
+  .nav-item.active { background: #eef2ff; color: #4f46e5; }
+  .nav-item .icon { font-size: 14px; width: 16px; text-align: center; }
+  .badge {
+    margin-left: auto; background: #6366f1; color: #fff;
+    font-size: 10px; padding: 1px 6px; border-radius: 10px;
+    min-width: 18px; text-align: center; font-weight: 700;
+  }
+  .badge.green  { background: #d1fae5; color: #065f46; }
+  .badge.orange { background: #fef3c7; color: #92400e; }
+  .badge.red    { background: #fee2e2; color: #991b1b; }
+
+  .main { padding: 22px 30px; overflow-y: auto; }
+  .page { display: none; }
+  .page.active { display: block; }
+  .page-title { font-size: 19px; font-weight: 700; margin-bottom: 4px; }
+  .page-desc  { font-size: 13px; color: #6b7280; margin-bottom: 18px; line-height: 1.6; }
+
+  .card {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+    padding: 18px; margin-bottom: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  }
+  .card h3 { font-size: 13px; font-weight: 600; margin-bottom: 12px; color: #374151; }
+
+  .form-row { display: flex; gap: 10px; align-items: flex-end; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+  label { font-size: 12px; color: #6b7280; font-weight: 500; }
+  select, input[type="number"], input[type="text"] {
+    background: #fff; border: 1px solid #d1d5db; border-radius: 7px;
+    padding: 8px 11px; color: #111827; font-size: 13px; outline: none;
+    transition: border-color .12s, box-shadow .12s;
+  }
+  select:focus, input:focus {
+    border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.08);
+  }
+
+  .btn {
+    padding: 8px 15px; border-radius: 7px; border: none;
+    cursor: pointer; font-size: 13px; font-weight: 500;
+    transition: all .12s; display: inline-flex; align-items: center;
+    gap: 5px; white-space: nowrap;
+  }
+  .btn-primary  { background: #6366f1; color: #fff; }
+  .btn-primary:hover  { background: #4f46e5; }
+  .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+  .btn-outline  { background: transparent; border: 1px solid #d1d5db; color: #6b7280; }
+  .btn-outline:hover { border-color: #6366f1; color: #4f46e5; background: #f5f3ff; }
+  .btn-green    { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+  .btn-green:hover  { background: #d1fae5; }
+  .btn-danger   { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+  .btn-danger:hover { background: #fee2e2; }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+  .filter-btn.active { border-color: #6366f1; color: #4f46e5; background: #eef2ff; }
+
+  .status-bar {
+    border-radius: 8px; padding: 9px 13px; font-size: 13px;
+    display: none; margin-bottom: 12px;
+    background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534;
+  }
+  .status-bar.loading { color: #4338ca; background: #eef2ff; border-color: #c7d2fe; }
+  .status-bar.error   { color: #991b1b; background: #fef2f2; border-color: #fecaca; }
+  .status-bar.show    { display: flex; align-items: center; gap: 8px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    text-align: left; padding: 9px 13px; background: #f9fafb;
+    color: #6b7280; font-size: 11px; font-weight: 600;
+    letter-spacing: .04em; text-transform: uppercase;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  td { padding: 10px 13px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; color: #374151; }
+  tr.data-row:last-of-type td { border-bottom: none; }
+  tr.data-row:hover td { background: #fafafa; }
+  .domain { font-weight: 600; color: #4f46e5; cursor: pointer; }
+  .domain:hover { text-decoration: underline; }
+  .url-link { color: #9ca3af; font-size: 12px; text-decoration: none; }
+  .url-link:hover { color: #6366f1; }
+
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .pill-ready   { background: #d1fae5; color: #065f46; }
+  .pill-sent    { background: #dbeafe; color: #1e40af; }
+  .pill-no_form { background: #f3f4f6; color: #6b7280; }
+  .pill-pending { background: #fef3c7; color: #92400e; }
+  .reply-none           { background: #f3f4f6; color: #6b7280; }
+  .reply-auto_reply     { background: #fef3c7; color: #92400e; }
+  .reply-human_reply    { background: #d1fae5; color: #065f46; }
+  .reply-meeting_needed { background: #fee2e2; color: #991b1b; }
+  .reply-other          { background: #f3f4f6; color: #6b7280; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
+    width: 13px; height: 13px;
+    border: 2px solid rgba(0,0,0,.12); border-top-color: currentColor;
+    border-radius: 50%; animation: spin .7s linear infinite; display: inline-block;
+  }
+
+  .empty { text-align: center; padding: 40px 24px; color: #9ca3af; }
+  .empty .big { font-size: 30px; margin-bottom: 8px; }
+  .empty p { font-size: 13px; line-height: 1.8; }
+
+  /* ── インライン詳細パネル ── */
+  .detail-row td { padding: 0 !important; border-bottom: 2px solid #e0e7ff !important; }
+  .detail-panel  { background: #f8f9ff; padding: 16px 18px; border-top: 1px solid #e0e7ff; }
+
+  /* ── 企業詳細ページ ── */
+  .detail-page-header {
+    display: flex; align-items: center; gap: 14px; margin-bottom: 20px;
+  }
+  .detail-page-header .back-btn {
+    background: none; border: 1px solid #d1d5db; color: #6b7280;
+    padding: 7px 12px; border-radius: 7px; cursor: pointer; font-size: 13px;
+    display: flex; align-items: center; gap: 5px; font-weight: 500;
+    transition: all .12s;
+  }
+  .detail-page-header .back-btn:hover { border-color: #6366f1; color: #4f46e5; background: #f5f3ff; }
+  .company-info-bar {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+    padding: 16px 20px; margin-bottom: 16px;
+    display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  }
+  .company-info-bar .info-item { display: flex; flex-direction: column; gap: 2px; }
+  .company-info-bar .info-label { font-size: 11px; color: #9ca3af; font-weight: 500; }
+  .company-info-bar .info-value { font-size: 14px; font-weight: 600; color: #111827; }
+  .company-info-bar .divider { width: 1px; height: 32px; background: #e5e7eb; }
+
+  .msg-editor {
+    background: #fff; border: 1px solid #c7d2fe; border-radius: 9px;
+    padding: 16px 18px; font-size: 14px; line-height: 1.9;
+    color: #1f2937; min-height: 180px; outline: none;
+    white-space: pre-wrap;
+    font-family: -apple-system, 'Hiragino Sans', sans-serif;
+  }
+  .msg-editor:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.08); }
+
+  /* スクリーンショット */
+  .screenshot-wrap { margin-top: 14px; border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; background: #f9fafb; display: none; }
+  .screenshot-wrap.show { display: block; }
+  .screenshot-wrap .ss-header {
+    padding: 8px 14px; font-size: 12px; font-weight: 600; color: #6b7280;
+    background: #f3f4f6; border-bottom: 1px solid #e5e7eb;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .screenshot-wrap img { width: 100%; display: block; }
+
+  /* モーダル */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.3); z-index: 200;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: #fff; border-radius: 14px; padding: 22px;
+    width: 480px; max-width: 95vw;
+    box-shadow: 0 20px 60px rgba(0,0,0,.15);
+  }
+  .modal h3 { font-size: 15px; font-weight: 700; margin-bottom: 5px; }
+  .modal p  { font-size: 12px; color: #6b7280; margin-bottom: 14px; }
+  textarea {
+    width: 100%; border: 1px solid #d1d5db; border-radius: 8px;
+    padding: 10px 12px; font-size: 13px; resize: vertical;
+    outline: none; min-height: 110px; color: #111827;
+    font-family: inherit; line-height: 1.6;
+  }
+  textarea:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.08); }
+  .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"></div>
+  <h1>フォーム営業ツール</h1>
+  <span class="version">β v0.2</span>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="nav-label">メニュー</div>
+    <button class="nav-item active" onclick="showPage('collect')">
+      <span class="icon">🔍</span> リスト収集
+      <span class="badge" id="badge-collect">0</span>
+    </button>
+    <button class="nav-item" onclick="showPage('companies')">
+      <span class="icon">🏢</span> 企業リスト
+      <span class="badge green" id="badge-companies">0</span>
+    </button>
+    <button class="nav-item" onclick="showPage('logs')">
+      <span class="icon">📋</span> 送信ログ
+      <span class="badge red" id="badge-reply" style="display:none">0</span>
+    </button>
+    <div class="nav-label" style="margin-top:auto">設定</div>
+    <button class="nav-item" onclick="showPage('blacklist')">
+      <span class="icon">🚫</span> ブラックリスト
+    </button>
+  </aside>
+
+  <main class="main">
+
+    <!-- ① リスト収集 -->
+    <div class="page active" id="page-collect">
+      <div class="page-title">リスト収集</div>
+      <div class="page-desc">業種を選んで「収集スタート」を押すと営業先URLを自動収集します。</div>
+      <div class="card">
+        <h3>🎯 収集設定</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label>業種</label>
+            <select id="industry">
+              <optgroup label="── 制作・支援会社">
+                <option value="creative">Web制作・デザイン会社</option>
+                <option value="agency">デジタル広告代理店</option>
+                <option value="sns">SNS運用代行</option>
+                <option value="ec_agency">EC運営代行・ECコンサル</option>
+              </optgroup>
+              <optgroup label="── 自社ブランド・EC">
+                <option value="ec">D2C・自社EC</option>
+                <option value="d2c">D2Cブランド</option>
+                <option value="apparel">アパレル・ファッションブランド</option>
+                <option value="beauty_brand">美容・コスメブランド</option>
+              </optgroup>
+              <optgroup label="── 事業会社">
+                <option value="food">飲食チェーン・フードブランド</option>
+                <option value="hotel">ホテル・旅館・観光施設</option>
+                <option value="sports">スポーツ・フィットネス</option>
+                <option value="realestate">不動産会社</option>
+                <option value="event">イベント・エンタメ</option>
+                <option value="video">映像制作会社</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="form-group" style="max-width:95px">
+            <label>件数</label>
+            <input type="number" id="count" value="10" min="1" max="50">
+          </div>
+          <button class="btn btn-primary" id="btn-collect" onclick="runCollect()">
+            🔍 収集スタート
+          </button>
+        </div>
+      </div>
+      <div class="status-bar" id="status-collect"></div>
+      <div class="card" id="collect-result" style="display:none">
+        <h3>📊 収集結果</h3>
+        <div id="collect-result-body"></div>
+      </div>
+    </div>
+
+    <!-- ② 企業リスト -->
+    <div class="page" id="page-companies">
+      <div class="page-title">企業リスト</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+        <button class="btn btn-outline btn-sm filter-btn active" onclick="setFilter('status','')">すべて</button>
+        <button class="btn btn-outline btn-sm filter-btn" onclick="setFilter('status','ready')">フォームあり</button>
+        <button class="btn btn-outline btn-sm filter-btn" onclick="setFilter('status','sent')">送信済み</button>
+        <button class="btn btn-outline btn-sm filter-btn" onclick="setFilter('status','no_form')">フォームなし</button>
+        <div style="width:1px;background:#e5e7eb;height:20px;margin:0 2px"></div>
+        <select id="industry-filter" onchange="setFilter('industry', this.value)"
+          style="font-size:13px;padding:6px 10px;height:32px">
+          <option value="">業種：すべて</option>
+          <optgroup label="制作・支援"><option value="creative">Web制作</option><option value="agency">広告代理店</option><option value="sns">SNS運用</option><option value="ec_agency">EC運営代行</option></optgroup>
+          <optgroup label="自社ブランド"><option value="ec">D2C・EC</option><option value="d2c">D2Cブランド</option><option value="apparel">アパレル</option><option value="beauty_brand">美容・コスメ</option></optgroup>
+          <optgroup label="事業会社"><option value="food">飲食</option><option value="hotel">ホテル</option><option value="sports">スポーツ</option><option value="realestate">不動産</option><option value="event">イベント</option><option value="video">映像制作</option></optgroup>
+        </select>
+        <button class="btn btn-danger btn-sm" id="btn-delete" onclick="deleteSelected()" style="display:none">
+          🗑 削除 (<span id="selected-count">0</span>件)
+        </button>
+        <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="showPage('collect')">＋ 追加収集</button>
+      </div>
+      <div class="status-bar" id="status-companies"></div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:34px">
+                  <input type="checkbox" id="check-all" onchange="toggleAll(this)"
+                    style="width:13px;height:13px;cursor:pointer;accent-color:#6366f1">
+                </th>
+                <th>企業名</th>
+                <th>URL</th>
+                <th style="cursor:pointer" onclick="toggleSort()">業種 ↕</th>
+                <th>フォーム</th>
+                <th>ステータス</th>
+                <th>アクション</th>
+              </tr>
+            </thead>
+            <tbody id="companies-body">
+              <tr><td colspan="7"><div class="empty"><div class="big">📭</div><p>まだ企業がありません</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ③ 企業詳細ページ -->
+    <div class="page" id="page-detail">
+      <div class="detail-page-header">
+        <button class="back-btn" onclick="showPage('companies')">← 企業リスト</button>
+        <div id="detail-breadcrumb" style="font-size:14px;color:#6b7280"></div>
+      </div>
+
+      <!-- 企業情報バー -->
+      <div class="company-info-bar" id="detail-company-bar">
+        <div class="info-item">
+          <span class="info-label">企業名</span>
+          <span class="info-value" id="d-company-name">—</span>
+        </div>
+        <div class="divider"></div>
+        <div class="info-item">
+          <span class="info-label">ドメイン</span>
+          <span class="info-value"><a id="d-company-url" href="#" target="_blank" style="color:#6366f1;text-decoration:none">—</a></span>
+        </div>
+        <div class="divider"></div>
+        <div class="info-item">
+          <span class="info-label">業種</span>
+          <span class="info-value" id="d-industry">—</span>
+        </div>
+        <div class="divider"></div>
+        <div class="info-item">
+          <span class="info-label">フォームURL</span>
+          <span><a id="d-contact-url" href="#" target="_blank" style="color:#8b5cf6;font-size:13px;text-decoration:none">—</a></span>
+        </div>
+      </div>
+
+      <div class="status-bar" id="status-detail"></div>
+
+      <!-- 生成結果エリア -->
+      <div id="detail-loading" style="display:none">
+        <div class="card" style="display:flex;align-items:center;gap:12px;padding:20px 24px">
+          <span class="spinner" style="width:16px;height:16px;border-width:2px;color:#6366f1"></span>
+          <span style="font-size:13px;color:#6b7280">HPを解析して営業文を生成しています...（30秒ほどかかります）</span>
+        </div>
+      </div>
+
+      <div id="detail-result" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 280px;gap:14px;align-items:start">
+
+          <!-- 左：営業文 -->
+          <div class="card" style="padding:0;overflow:hidden">
+            <div style="padding:12px 18px;border-bottom:1px solid #f3f4f6;background:#f9fafb;display:flex;align-items:center;justify-content:space-between">
+              <div style="font-size:13px;font-weight:600;color:#374151">✉️ 営業文</div>
+              <div style="display:flex;align-items:center;gap:10px">
+                <span id="d-char-count" style="font-size:12px;color:#9ca3af">0字</span>
+                <div style="width:80px;height:3px;background:#f3f4f6;border-radius:2px;overflow:hidden">
+                  <div id="d-char-bar" style="height:100%;background:#10b981;border-radius:2px;width:0%;transition:width .2s,background .2s"></div>
+                </div>
+                <span id="d-cache-badge" style="display:none;font-size:11px;font-weight:600;color:#065f46;background:#d1fae5;padding:2px 8px;border-radius:10px">💾 保存済み</span>
+                <button class="btn btn-outline btn-sm" onclick="regenDetailPage()">🔄 再生成</button>
+              </div>
+            </div>
+            <div style="padding:18px">
+              <div id="d-msg-editor" class="msg-editor"
+                   contenteditable="true" oninput="updateDetailPageChar()"
+                   data-field="message"></div>
+              <div style="margin-top:6px;font-size:11px;color:#9ca3af" id="d-char-hint">150〜220字が最適</div>
+            </div>
+          </div>
+
+          <!-- 右：フィールド + 送信 -->
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div class="card">
+              <div style="font-size:12px;font-weight:600;color:#9ca3af;margin-bottom:10px">📋 その他フィールド</div>
+              <div id="d-other-fields"><div style="color:#9ca3af;font-size:12px">なし</div></div>
+            </div>
+            <div class="card" style="background:#f9fafb">
+              <div style="font-size:11px;font-weight:600;color:#9ca3af;margin-bottom:8px">送信前チェック</div>
+              <div id="d-checklist" style="font-size:12px;line-height:2;color:#6b7280"></div>
+            </div>
+            <button class="btn btn-green"  style="width:100%;justify-content:center" onclick="sendDetailPage(true)">👁 プレビュー確認</button>
+            <button class="btn btn-danger" style="width:100%;justify-content:center" onclick="sendDetailPage(false)">🚀 送信する</button>
+            <div id="d-send-result" style="font-size:12px;text-align:center;min-height:16px;color:#6b7280"></div>
+          </div>
+        </div>
+
+        <!-- フォーム確認スクリーンショット -->
+        <div class="screenshot-wrap" id="d-form-screenshot">
+          <div class="ss-header">✅ フォーム確認済み（解析時のスクリーンショット）</div>
+          <img id="d-form-screenshot-img" src="" alt="form preview">
+        </div>
+
+        <!-- 送信後スクリーンショット -->
+        <div class="screenshot-wrap" id="d-screenshot">
+          <div class="ss-header">📸 入力後プレビュー（送信していません）</div>
+          <img id="d-screenshot-img" src="" alt="preview">
+        </div>
+      </div>
+    </div>
+
+    <!-- ④ 送信ログ -->
+    <div class="page" id="page-logs">
+      <div class="page-title">送信ログ</div>
+      <div class="page-desc">返信が来たら「返信記録」から内容を入力すると、AIが返信種別を自動判定します。</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+        <button class="btn btn-outline btn-sm filter-btn active" onclick="setLogFilter('')">すべて</button>
+        <button class="btn btn-outline btn-sm filter-btn" onclick="setLogFilter('none')">未確認</button>
+        <button class="btn btn-outline btn-sm filter-btn" onclick="setLogFilter('auto_reply')">自動返信</button>
+        <button class="btn btn-outline btn-sm filter-btn" onclick="setLogFilter('human_reply')">通常返信</button>
+        <button class="btn btn-outline btn-sm filter-btn" onclick="setLogFilter('meeting_needed')">要対応</button>
+        <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="loadLogs()">🔄 更新</button>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr><th>#</th><th>送信先</th><th>業種</th><th>送信日時</th><th>結果</th><th>返信状況</th><th>アクション</th></tr>
+            </thead>
+            <tbody id="logs-body">
+              <tr><td colspan="7"><div class="empty"><div class="big">📋</div><p>まだログがありません</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ⑤ ブラックリスト -->
+    <div class="page" id="page-blacklist">
+      <div class="page-title">ブラックリスト</div>
+      <div class="page-desc">収集・送信をスキップするドメインを管理します。</div>
+      <div class="card">
+        <h3>➕ ドメインを追加</h3>
+        <div class="form-row">
+          <div class="form-group"><label>ドメイン</label><input type="text" id="bl-domain" placeholder="example.com"></div>
+          <div class="form-group"><label>理由（任意）</label><input type="text" id="bl-reason" placeholder="競合など"></div>
+          <button class="btn btn-primary" onclick="addBlacklist()">追加</button>
+        </div>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <table>
+          <thead><tr><th>ドメイン</th><th>理由</th><th>追加日</th></tr></thead>
+          <tbody id="bl-body"><tr><td colspan="3"><div class="empty"><div class="big">✅</div><p>空です</p></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- 返信記録モーダル -->
+<div class="modal-overlay" id="reply-modal">
+  <div class="modal">
+    <h3>📩 返信を記録</h3>
+    <p>返信メールの本文を貼り付けてください。AIが自動で種別判定します。</p>
+    <textarea id="reply-content" placeholder="返信メールの本文をここに貼り付けてください..."></textarea>
+    <div style="margin-top:10px">
+      <label style="font-size:12px;margin-bottom:5px;display:block">手動指定（任意）</label>
+      <select id="reply-status-select" style="width:100%;font-size:13px">
+        <option value="">AIで自動判定（推奨）</option>
+        <option value="auto_reply">自動返信</option>
+        <option value="human_reply">通常返信</option>
+        <option value="meeting_needed">要対応（面談・商談）</option>
+        <option value="other">その他</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeReplyModal()">キャンセル</button>
+      <button class="btn btn-primary" id="btn-save-reply" onclick="saveReply()">💾 保存・判定</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'http://localhost:8010';
+const SENDER_DEFAULTS = {
+  last_name:  '金指',
+  first_name: '孝章',
+  name:       '金指孝章',
+  company:    '株式会社Chateau 2D',
+  email:      'info@designresize.pro',
+  phone:      '',
+};
+const LAST_NAME_KEYS  = /sei|last.?name|family.?name|surname|^姓$|セイ|苗字|last_name|lastName/i;
+const FIRST_NAME_KEYS = /mei|first.?name|given.?name|^名$|メイ|first_name|firstName/i;
+const NAME_KEYS       = /name|氏名|お名前|担当|御名前|名前/i;
+const COMPANY_KEYS    = /company|会社|法人|御社|組織|corporation|firm/i;
+const EMAIL_KEYS      = /email|mail|メール|Eメール/i;
+const PHONE_KEYS      = /phone|tel|電話|fax/i;
+
+function senderDefault(key, required) {
+  if (LAST_NAME_KEYS.test(key))  return SENDER_DEFAULTS.last_name;
+  if (FIRST_NAME_KEYS.test(key)) return SENDER_DEFAULTS.first_name;
+  if (NAME_KEYS.test(key))       return SENDER_DEFAULTS.name;
+  if (COMPANY_KEYS.test(key))    return SENDER_DEFAULTS.company;
+  if (EMAIL_KEYS.test(key))      return SENDER_DEFAULTS.email;
+  if (PHONE_KEYS.test(key))      return required ? '03-0000-0000' : '';
+  return null;
+}
+
+let allCompanies     = [];
+let currentFilter    = { status: '', industry: '' };
+let currentLogFilter = '';
+let sortAsc          = true;
+let replyTargetLogId = null;
+let allLogs          = [];
+
+// 詳細ページの状態
+let detailCompanyId  = null;
+let detailPrepare    = null;   // /prepare の結果
+
+const INDUSTRY_LABEL = {
+  creative:'Web制作・デザイン', agency:'広告代理店', sns:'SNS運用代行',
+  ec_agency:'EC運営代行', ec:'D2C・EC', d2c:'D2Cブランド',
+  apparel:'アパレル', beauty_brand:'美容・コスメ', food:'飲食',
+  hotel:'ホテル・旅館', sports:'スポーツ', realestate:'不動産', event:'イベント'
+};
+
+// ─── ナビ ───
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(b => {
+    if ((b.getAttribute('onclick') || '').includes(`'${name}'`)) b.classList.add('active');
+  });
+  if (name === 'companies') loadCompanies();
+  if (name === 'logs')      loadLogs();
+  if (name === 'blacklist') loadBlacklist();
+}
+
+function setStatus(id, msg, type = 'success') {
+  const el = document.getElementById(id);
+  el.className = 'status-bar show' + (type === 'loading' ? ' loading' : type === 'error' ? ' error' : '');
+  el.innerHTML = type === 'loading'
+    ? `<span class="spinner"></span> ${msg}`
+    : (type === 'error' ? `⚠️ ${msg}` : `✅ ${msg}`);
+}
+function clearStatus(id) { document.getElementById(id).className = 'status-bar'; }
+
+// ─── ① リスト収集 ───
+async function runCollect() {
+  const industry = document.getElementById('industry').value;
+  const count    = parseInt(document.getElementById('count').value);
+  const btn      = document.getElementById('btn-collect');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> 収集中...';
+  setStatus('status-collect', 'DuckDuckGo検索でURLを収集しています...', 'loading');
+  try {
+    const data = await fetchJSON('/collect', 'POST', { industry, count });
+    if (data.error) { setStatus('status-collect', data.error, 'error'); }
+    else {
+      setStatus('status-collect', `収集完了！ 保存 ${data.saved}件 / スキップ ${data.skipped}件`);
+      document.getElementById('badge-collect').textContent = data.saved;
+      showCollectResult(data); updateBadges();
+    }
+  } catch { setStatus('status-collect', 'サーバーに接続できません', 'error'); }
+  btn.disabled = false; btn.innerHTML = '🔍 収集スタート';
+}
+
+function showCollectResult(data) {
+  document.getElementById('collect-result').style.display = 'block';
+  const saved = data.details.filter(d => d.result === '保存済み');
+  document.getElementById('collect-result-body').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:9px;padding:13px;text-align:center">
+        <div style="font-size:24px;font-weight:700;color:#059669">${data.saved}</div>
+        <div style="font-size:12px;color:#6b7280;margin-top:2px">保存された企業</div>
+      </div>
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:9px;padding:13px;text-align:center">
+        <div style="font-size:24px;font-weight:700;color:#d97706">${data.skipped}</div>
+        <div style="font-size:12px;color:#6b7280;margin-top:2px">スキップ</div>
+      </div>
+    </div>
+    ${saved.map(d => `
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f3f4f6;font-size:13px">
+        <span style="color:#059669">✓</span>
+        <a href="${d.url}" target="_blank" style="color:#6366f1;text-decoration:none">${d.url}</a>
+        ${d.has_form ? '<span style="background:#d1fae5;color:#065f46;padding:2px 7px;border-radius:10px;font-size:11px;font-weight:600">フォームあり</span>' : ''}
+      </div>`).join('')}
+    <div style="margin-top:12px">
+      <button class="btn btn-primary btn-sm" onclick="showPage('companies')">企業リストを見る →</button>
+    </div>
+  `;
+}
+
+// ─── ② 企業リスト ───
+function setFilter(key, value) {
+  currentFilter[key] = value;
+  if (key === 'status') {
+    document.querySelectorAll('#page-companies .filter-btn').forEach(b => {
+      const oc = b.getAttribute('onclick') || '';
+      const isAll = value === '' && (oc.endsWith("'')") || oc.includes("''"));
+      b.classList.toggle('active', isAll || oc.includes(`'${value}'`));
+    });
+  }
+  loadCompanies();
+}
+
+function toggleSort() { sortAsc = !sortAsc; loadCompanies(); }
+
+async function loadCompanies() {
+  setStatus('status-companies', '読み込み中...', 'loading');
+  let url = `${API}/companies?limit=500`;
+  if (currentFilter.status)   url += `&status=${currentFilter.status}`;
+  if (currentFilter.industry) url += `&industry=${currentFilter.industry}`;
+  try {
+    let data = await (await fetch(url)).json();
+    allCompanies = data;
+    clearStatus('status-companies');
+    data.sort((a, b) => {
+      const av = a.industry || '', bv = b.industry || '';
+      return sortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
+    });
+    document.getElementById('check-all').checked = false;
+    updateDeleteBtn();
+    document.getElementById('badge-companies').textContent = data.filter(c => c.status !== 'sent').length;
+
+    if (!data.length) {
+      document.getElementById('companies-body').innerHTML =
+        '<tr><td colspan="7"><div class="empty"><div class="big">📭</div><p>企業がありません</p></div></td></tr>';
+      return;
+    }
+
+    document.getElementById('companies-body').innerHTML = data.map(c => `
+      <tr class="data-row" id="row-${c.id}">
+        <td><input type="checkbox" class="row-check" value="${c.id}" onchange="updateDeleteBtn()"
+          style="width:13px;height:13px;cursor:pointer;accent-color:#6366f1"></td>
+        <td>
+          <div class="domain" onclick="openDetailPage(${c.id})">${escHtml(c.title || c.domain)}</div>
+          <div style="font-size:11px;color:#9ca3af">${escHtml(c.domain)}</div>
+        </td>
+        <td>
+          <a href="${escHtml(c.url)}" target="_blank" rel="noopener noreferrer"
+            style="font-size:12px;color:#6366f1;text-decoration:none;word-break:break-all"
+            onclick="event.stopPropagation()">🔗 開く</a>
+        </td>
+        <td style="font-size:12px;color:#6b7280">${INDUSTRY_LABEL[c.industry] || c.industry || '-'}</td>
+        <td>${c.has_form ? '<span class="pill pill-ready">あり</span>' : '<span class="pill pill-no_form">なし</span>'}</td>
+        <td><span class="pill pill-${c.status}">${statusLabel(c.status)}</span></td>
+        <td style="display:flex;gap:6px;align-items:center">
+          ${c.has_form ? `<button class="btn btn-primary btn-sm" onclick="openDetailPage(${c.id})">📝 詳細・送信</button>` : ''}
+          <button class="btn btn-outline btn-sm" onclick="toggleInline(${c.id})" id="inline-btn-${c.id}" ${c.has_form ? '' : 'style="display:none"'}>▼</button>
+        </td>
+      </tr>
+      <tr class="detail-row" id="detail-row-${c.id}" style="display:none">
+        <td colspan="7">
+          <div class="detail-panel" id="detail-panel-${c.id}">
+            <div style="display:flex;align-items:center;gap:10px;padding:8px 0;color:#6b7280;font-size:13px">
+              <span class="spinner"></span> 読み込み中...
+            </div>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  } catch { setStatus('status-companies', 'サーバーに接続できません', 'error'); }
+}
+
+function toggleAll(master) {
+  document.querySelectorAll('.row-check').forEach(cb => cb.checked = master.checked);
+  updateDeleteBtn();
+}
+function updateDeleteBtn() {
+  const n = document.querySelectorAll('.row-check:checked').length;
+  document.getElementById('selected-count').textContent = n;
+  document.getElementById('btn-delete').style.display = n > 0 ? 'inline-flex' : 'none';
+}
+async function deleteSelected() {
+  const ids = [...document.querySelectorAll('.row-check:checked')].map(cb => parseInt(cb.value));
+  if (!ids.length || !confirm(`${ids.length}件を削除しますか？`)) return;
+  await fetch(`${API}/companies`, {
+    method: 'DELETE', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ ids })
+  });
+  setStatus('status-companies', `${ids.length}件を削除しました`);
+  loadCompanies(); updateBadges();
+}
+function statusLabel(s) {
+  return { ready:'準備完了', sent:'送信済み', no_form:'フォームなし', pending:'保留' }[s] || s;
+}
+
+// ─── インライン展開（▼ ボタン） ───
+const inlineData = {};
+async function toggleInline(id) {
+  const row   = document.getElementById('detail-row-' + id);
+  const btn   = document.getElementById('inline-btn-' + id);
+  const panel = document.getElementById('detail-panel-' + id);
+  if (row.style.display !== 'none') { row.style.display = 'none'; btn.textContent = '▼'; return; }
+  row.style.display = ''; btn.textContent = '▲';
+  if (inlineData[id]) { renderInline(id, inlineData[id]); return; }
+  panel.innerHTML = `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;color:#6b7280;font-size:13px"><span class="spinner"></span> 生成中...</div>`;
+  try {
+    const data = await fetchJSON('/prepare', 'POST', { company_id: id });
+    if (data.error) { panel.innerHTML = `<div style="color:#ef4444;font-size:13px;padding:8px">⚠️ ${escHtml(data.error)}</div>`; return; }
+    inlineData[id] = data; renderInline(id, data);
+  } catch { panel.innerHTML = `<div style="color:#ef4444;font-size:13px;padding:8px">⚠️ エラーが発生しました</div>`; }
+}
+
+function renderInline(id, data) {
+  const panel = document.getElementById('detail-panel-' + id);
+  const body  = data.message_body || '';
+  let msgKey  = 'message';
+  const fv = data.field_values || {};
+  for (const [k, v] of Object.entries(fv)) { if (v === body) { msgKey = k; break; } }
+
+  // 送信者情報フィールドを構築
+  const senderFields = [];
+  const senderFieldKeys = [];
+  for (const [k, v] of Object.entries(fv)) {
+    if (typeof v !== 'string' || v === body) continue;
+    const def = senderDefault(k);
+    if (def !== null) { senderFields.push([k, v || def]); senderFieldKeys.push(k); }
+  }
+  if (!senderFieldKeys.some(k => NAME_KEYS.test(k)))    senderFields.unshift(['お名前', SENDER_DEFAULTS.name]);
+  if (!senderFieldKeys.some(k => COMPANY_KEYS.test(k))) senderFields.unshift(['会社名', SENDER_DEFAULTS.company]);
+  if (!senderFieldKeys.some(k => EMAIL_KEYS.test(k)))   senderFields.push(['メールアドレス', SENDER_DEFAULTS.email]);
+
+  const senderHTML = senderFields.map(([k, v]) => `
+    <div style="margin-bottom:6px">
+      <div style="font-size:10px;color:#9ca3af;margin-bottom:1px">${escHtml(k)}</div>
+      <div contenteditable="true" data-field="${escHtml(k)}"
+        style="background:#fff;border:1px solid #e5e7eb;border-radius:5px;padding:4px 8px;font-size:12px;color:#374151;outline:none">
+        ${escHtml(String(v))}</div>
+    </div>`).join('');
+
+  panel.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 210px;gap:12px;align-items:start">
+      <div>
+        <div style="font-size:12px;font-weight:600;color:#374151;margin-bottom:7px">
+          ✉️ 営業文
+          <button class="btn btn-outline btn-sm" style="margin-left:8px" onclick="regenInline(${id})">🔄 再生成</button>
+        </div>
+        <div id="inline-msg-${id}" class="msg-editor" contenteditable="true"
+             data-field="${escHtml(msgKey)}"
+             style="min-height:130px;font-size:13px">${escHtml(body)}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:10px">
+          <div style="font-size:11px;font-weight:600;color:#6366f1;margin-bottom:8px">送信者情報</div>
+          ${senderHTML}
+        </div>
+        <button class="btn btn-green btn-sm" style="width:100%;justify-content:center" onclick="sendInline(${id},'${escHtml(data.contact_url||'')}',true)">👁 プレビュー</button>
+        <button class="btn btn-danger btn-sm" style="width:100%;justify-content:center" onclick="confirmSendInline(${id},'${escHtml(data.contact_url||'')}')">🚀 送信</button>
+        <div id="inline-result-${id}" style="font-size:11px;color:#6b7280;text-align:center;min-height:14px"></div>
+      </div>
+    </div>
+    <div class="screenshot-wrap" id="inline-ss-${id}">
+      <div class="ss-header">📸 入力後プレビュー</div>
+      <img id="inline-ss-img-${id}" src="" alt="preview">
+    </div>
+  `;
+}
+
+async function regenInline(id) {
+  const panel = document.getElementById('detail-panel-' + id);
+  panel.innerHTML = `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;color:#6b7280;font-size:13px"><span class="spinner"></span> 再生成中...</div>`;
+  const data = await fetchJSON('/prepare', 'POST', { company_id: id, force: true });
+  if (!data.error) { inlineData[id] = data; renderInline(id, data); }
+}
+
+function getInlineFieldValues(id) {
+  const vals = {};
+  const panel = document.getElementById('detail-panel-' + id);
+  if (!panel) return vals;
+  panel.querySelectorAll('[data-field]').forEach(el => { vals[el.dataset.field] = el.innerText.trim(); });
+  return vals;
+}
+
+async function sendInline(id, contactUrl, dryRun) {
+  const resultEl = document.getElementById('inline-result-' + id);
+  resultEl.innerHTML = '<span class="spinner"></span>';
+  try {
+    const res = await fetchJSON('/send', 'POST', {
+      company_id: id, contact_url: contactUrl,
+      field_values: getInlineFieldValues(id), dry_run: dryRun
+    });
+    if (res.success) {
+      const isSentOk = !dryRun && res.result && res.result.includes('成功');
+      resultEl.innerHTML = dryRun
+        ? '<span style="color:#059669">✅ 入力確認OK</span>'
+        : (isSentOk ? '<span style="color:#059669">✅ 送信成功</span>' : '<span style="color:#f59e0b">📸 操作完了（画面確認）</span>');
+      if (res.screenshot_base64) {
+        const wrap = document.getElementById('inline-ss-' + id);
+        wrap.querySelector('.ss-header').textContent = dryRun ? '📸 入力後プレビュー' : '📸 送信後の画面';
+        document.getElementById('inline-ss-img-' + id).src = res.screenshot_base64;
+        wrap.classList.add('show');
+        wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+      if (!dryRun) updateBadges();
+    } else { resultEl.innerHTML = `<span style="color:#ef4444">⚠️ ${escHtml(res.result||'エラー')}</span>`; }
+  } catch { resultEl.innerHTML = '<span style="color:#ef4444">⚠️ エラー</span>'; }
+}
+
+async function confirmSendInline(id, contactUrl) {
+  if (!confirm('実際にフォームを送信します。よろしいですか？')) return;
+  await sendInline(id, contactUrl, false);
+}
+
+// ─── ③ 企業詳細ページ ───
+async function openDetailPage(id) {
+  detailCompanyId = id;
+  detailPrepare   = null;
+
+  // 企業情報をセット
+  const c = allCompanies.find(c => c.id === id);
+  if (c) {
+    document.getElementById('d-company-name').textContent = c.title || c.domain;
+    const urlEl = document.getElementById('d-company-url');
+    urlEl.textContent = c.domain; urlEl.href = c.url;
+    document.getElementById('d-industry').textContent = INDUSTRY_LABEL[c.industry] || c.industry || '-';
+    document.getElementById('detail-breadcrumb').textContent = c.title || c.domain;
+  }
+  document.getElementById('d-contact-url').textContent = '—';
+  document.getElementById('d-contact-url').href = '#';
+
+  // ページ切り替え
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-detail').classList.add('active');
+  // サイドバーの「企業リスト」をactive
+  document.querySelectorAll('.nav-item').forEach(b => {
+    b.classList.toggle('active', (b.getAttribute('onclick')||'').includes("'companies'"));
+  });
+
+  clearStatus('status-detail');
+  document.getElementById('detail-loading').style.display = 'block';
+  document.getElementById('detail-result').style.display  = 'none';
+
+  try {
+    const data = await fetchJSON('/prepare', 'POST', { company_id: id });
+    document.getElementById('detail-loading').style.display = 'none';
+    if (data.error) { setStatus('status-detail', data.error, 'error'); return; }
+    detailPrepare = data;
+    renderDetailPage(data);
+  } catch (e) {
+    document.getElementById('detail-loading').style.display = 'none';
+    setStatus('status-detail', 'エラーが発生しました', 'error');
+  }
+}
+
+function renderDetailPage(data) {
+  document.getElementById('detail-result').style.display = 'block';
+  // キャッシュバッジ
+  const badge = document.getElementById('d-cache-badge');
+  if (badge) badge.style.display = data.from_cache ? 'inline-block' : 'none';
+
+  // フォームURL更新
+  const cu = document.getElementById('d-contact-url');
+  cu.textContent = data.contact_url || '(取得できず)'; cu.href = data.contact_url || '#';
+
+  const body = data.message_body || '';
+  let msgKey = 'message';
+  for (const [k, v] of Object.entries(data.field_values || {})) { if (v === body) { msgKey = k; break; } }
+
+  const editor = document.getElementById('d-msg-editor');
+  editor.innerText     = body || '（営業文を生成できませんでした。再生成してください）';
+  editor.dataset.field = msgKey;
+  updateDetailPageChar();
+
+  // フォームフィールドを全表示（scraper の fields 定義ベース）
+  const fv     = data.field_values || {};
+  const fields = data.fields || [];
+  const body_key = msgKey;
+
+  const renderFormField = (f) => {
+    const k   = f.name;
+    const lbl = f.label || k;
+    const val = fv[k] !== undefined ? fv[k] : (senderDefault(k, f.required) || '');
+    const req = f.required ? '<span style="color:#ef4444">*</span>' : '';
+
+    let input = '';
+    if (f.type === 'select' && f.options && f.options.length > 0) {
+      const opts = f.options.map(o =>
+        `<option value="${escHtml(o.value)}" ${o.value === val || o.label === val ? 'selected' : ''}>${escHtml(o.label)}</option>`
+      ).join('');
+      input = `<select data-field="${escHtml(k)}"
+        style="width:100%;background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:6px 9px;font-size:12px;color:#374151;outline:none">
+        ${opts}</select>`;
+    } else if (f.type === 'textarea') {
+      input = `<div contenteditable="true" data-field="${escHtml(k)}"
+        style="background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:6px 9px;font-size:12px;color:#374151;outline:none;min-height:60px;white-space:pre-wrap">
+        ${escHtml(String(val))}</div>`;
+    } else {
+      input = `<div contenteditable="true" data-field="${escHtml(k)}"
+        style="background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:6px 9px;font-size:12px;color:#374151;outline:none;min-height:22px">
+        ${escHtml(String(val))}</div>`;
+    }
+    return `<div style="margin-bottom:10px">
+      <div style="font-size:11px;color:#6b7280;margin-bottom:3px">${escHtml(lbl)} ${req}</div>
+      ${input}
+    </div>`;
+  };
+
+  // scraper の fields が空なら field_values から補完（後方互換）
+  let fieldsToRender = fields.filter(f => f.name !== body_key);
+  if (fieldsToRender.length === 0) {
+    fieldsToRender = Object.entries(fv)
+      .filter(([k, v]) => k !== body_key)
+      .map(([k, v]) => ({ name: k, type: 'text', label: k, required: false, options: [] }));
+  }
+
+  // 送信者系フィールドが fields にない場合は先頭に補完
+  const fieldNames = fieldsToRender.map(f => f.name);
+  const extra = [];
+  if (!fieldNames.some(k => NAME_KEYS.test(k)))
+    extra.push({ name: 'お名前', type: 'text', label: 'お名前', required: false, options: [] });
+  if (!fieldNames.some(k => COMPANY_KEYS.test(k)))
+    extra.push({ name: '会社名', type: 'text', label: '会社名', required: false, options: [] });
+  if (!fieldNames.some(k => EMAIL_KEYS.test(k)))
+    extra.push({ name: 'メールアドレス', type: 'email', label: 'メールアドレス', required: false, options: [] });
+
+  document.getElementById('d-other-fields').innerHTML =
+    [...extra, ...fieldsToRender].map(renderFormField).join('');
+
+  // チェックリスト
+  const checks = [
+    [body.length >= 100, `営業文 ${body.length}字`],
+    [!!data.contact_url, 'フォームURL取得済み'],
+  ];
+  document.getElementById('d-checklist').innerHTML = checks
+    .map(([ok, label]) => `<div>${ok ? '✅' : '⬜'} ${label}</div>`).join('');
+
+  // 送信スクリーンショットリセット
+  document.getElementById('d-screenshot').classList.remove('show');
+  document.getElementById('d-send-result').innerHTML = '';
+
+  // フォーム確認スクリーンショットを取得（常に最新を取る）
+  if (data.contact_url) {
+    fetchFormScreenshot(data.contact_url, data.company ? data.company.id : detailCompanyId);
+  }
+}
+
+async function fetchFormScreenshot(contactUrl, companyId) {
+  const wrap = document.getElementById('d-form-screenshot');
+  const img  = document.getElementById('d-form-screenshot-img');
+  wrap.querySelector('.ss-header').textContent = '⏳ フォームページを確認中...';
+  wrap.classList.add('show');
+  try {
+    const res = await fetchJSON('/screenshot', 'POST', {
+      url: contactUrl, company_id: companyId || 0
+    });
+    if (res.screenshot_base64) {
+      img.src = res.screenshot_base64;
+      const urlNote = res.final_url ? ` — ${res.final_url}` : '';
+      wrap.querySelector('.ss-header').textContent = `✅ フォーム確認済み${urlNote}`;
+    } else {
+      wrap.querySelector('.ss-header').textContent = `⚠️ フォーム取得失敗: ${res.error || '不明'} (${res.final_url || ''})`;
+    }
+  } catch {
+    wrap.querySelector('.ss-header').textContent = '⚠️ スクリーンショット取得エラー';
+  }
+}
+
+function updateDetailPageChar() {
+  const text  = document.getElementById('d-msg-editor').innerText || '';
+  const len   = text.replace(/\n/g, '').length;
+  const color = len < 100 ? '#f59e0b' : len <= 220 ? '#10b981' : '#ef4444';
+  document.getElementById('d-char-count').textContent = len + '字';
+  document.getElementById('d-char-count').style.color = color;
+  const bar = document.getElementById('d-char-bar');
+  bar.style.width = Math.min(len / 300 * 100, 100) + '%';
+  bar.style.background = color;
+  document.getElementById('d-char-hint').style.color = color;
+}
+
+async function regenDetailPage() {
+  if (!detailCompanyId) return;
+  document.getElementById('detail-loading').style.display = 'block';
+  document.getElementById('detail-result').style.display  = 'none';
+  const data = await fetchJSON('/prepare', 'POST', { company_id: detailCompanyId, force: true });
+  document.getElementById('detail-loading').style.display = 'none';
+  if (!data.error) { detailPrepare = data; renderDetailPage(data); }
+}
+
+function getDetailPageValues() {
+  const vals = {};
+  const result = document.getElementById('detail-result');
+  result.querySelectorAll('[data-field]').forEach(el => {
+    if (el.tagName === 'SELECT') {
+      vals[el.dataset.field] = el.value;
+    } else {
+      vals[el.dataset.field] = el.innerText.trim();
+    }
+  });
+  return vals;
+}
+
+async function sendDetailPage(dryRun) {
+  if (!detailPrepare) return;
+  if (!dryRun && !confirm('実際にフォームを送信します。よろしいですか？')) return;
+  const resultEl = document.getElementById('d-send-result');
+  resultEl.innerHTML = '<span class="spinner"></span> ' + (dryRun ? 'プレビュー確認中...' : '送信中...');
+  try {
+    const res = await fetchJSON('/send', 'POST', {
+      company_id:   detailCompanyId,
+      contact_url:  detailPrepare.contact_url,
+      field_values: getDetailPageValues(),
+      dry_run:      dryRun,
+    });
+    if (res.success) {
+      const isSentOk = !dryRun && res.result && res.result.includes('成功');
+      const label = dryRun
+        ? '✅ プレビューOK（下のスクリーンショットで入力内容を確認してください）'
+        : (isSentOk ? '✅ 送信成功（完了ページを確認してください）' : '📸 送信操作完了（下のスクリーンショットで結果を確認してください）');
+      resultEl.innerHTML = `<span style="color:#059669;font-size:13px">${label}</span>`;
+      if (res.screenshot_base64) {
+        const img = document.getElementById('d-screenshot-img');
+        const wrap = document.getElementById('d-screenshot');
+        wrap.querySelector('.ss-header').textContent = dryRun ? '📸 入力後プレビュー' : '📸 送信後の画面';
+        img.src = res.screenshot_base64;
+        wrap.classList.add('show');
+        wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+      if (!dryRun) updateBadges();
+    } else { resultEl.innerHTML = `<span style="color:#ef4444">⚠️ ${escHtml(res.result||'エラー')}</span>`; }
+  } catch { resultEl.innerHTML = '<span style="color:#ef4444">⚠️ エラー</span>'; }
+}
+
+// ─── ④ 送信ログ ───
+const REPLY_LABELS = { none:'未確認', auto_reply:'自動返信', human_reply:'通常返信', meeting_needed:'要対応', other:'その他' };
+
+function setLogFilter(val) {
+  currentLogFilter = val;
+  document.querySelectorAll('#page-logs .filter-btn').forEach(b => {
+    const oc = b.getAttribute('onclick') || '';
+    b.classList.toggle('active', oc.includes(`'${val}'`) || (val === '' && oc.endsWith("''")));
+  });
+  renderLogs();
+}
+
+async function loadLogs() {
+  try {
+    allLogs = await (await fetch(`${API}/logs?limit=200`)).json();
+    updateReplyBadge(); renderLogs();
+  } catch {
+    document.getElementById('logs-body').innerHTML =
+      '<tr><td colspan="7"><div class="empty"><div class="big">⚠️</div><p>取得できませんでした</p></div></td></tr>';
+  }
+}
+
+function updateReplyBadge() {
+  const n = allLogs.filter(l => l.reply_status === 'meeting_needed' || l.reply_status === 'human_reply').length;
+  const b = document.getElementById('badge-reply');
+  b.textContent = n; b.style.display = n > 0 ? '' : 'none';
+}
+
+function renderLogs() {
+  const filtered = currentLogFilter ? allLogs.filter(l => l.reply_status === currentLogFilter) : allLogs;
+  const tbody = document.getElementById('logs-body');
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty"><div class="big">📋</div><p>ログなし</p></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = filtered.map(l => {
+    const rs = l.reply_status || 'none';
+    const name = l.company_title || l.company_domain || l.url || '-';
+    return `
+    <tr>
+      <td style="color:#9ca3af;font-size:12px">#${l.id}</td>
+      <td>
+        <div style="font-weight:600;font-size:13px">${escHtml(name)}</div>
+        <a href="${escHtml(l.url||'')}" target="_blank" class="url-link">${escHtml(l.url||'')}</a>
+      </td>
+      <td style="font-size:12px;color:#6b7280">${INDUSTRY_LABEL[l.company_industry]||l.company_industry||'-'}</td>
+      <td style="font-size:12px;color:#6b7280;white-space:nowrap">${l.sent_at||'-'}</td>
+      <td style="font-size:12px;color:${l.result&&l.result.includes('成功')?'#059669':'#6b7280'}">${escHtml(l.result||'-')}</td>
+      <td>
+        <span class="pill reply-${rs}">${REPLY_LABELS[rs]||rs}</span>
+        ${rs==='meeting_needed'?'<br><span style="font-size:10px;color:#ef4444">⚡ 対応必要</span>':''}
+      </td>
+      <td>
+        <button class="btn btn-outline btn-sm" onclick="openReplyModal(${l.id})">📩 返信記録</button>
+        ${l.reply_content?`<button class="btn btn-outline btn-sm" style="margin-top:3px" onclick="showReplyContent(${l.id})">👁 確認</button>`:''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openReplyModal(logId) {
+  replyTargetLogId = logId;
+  document.getElementById('reply-content').value = '';
+  document.getElementById('reply-status-select').value = '';
+  document.getElementById('reply-modal').classList.add('show');
+}
+function closeReplyModal() {
+  document.getElementById('reply-modal').classList.remove('show');
+  replyTargetLogId = null;
+}
+async function saveReply() {
+  const content = document.getElementById('reply-content').value.trim();
+  if (!content) { alert('返信内容を入力してください'); return; }
+  const btn = document.getElementById('btn-save-reply');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> 判定中...';
+  try {
+    const data = await fetchJSON(`/logs/${replyTargetLogId}/reply`, 'POST', {
+      reply_content: content,
+      reply_status:  document.getElementById('reply-status-select').value
+    });
+    closeReplyModal(); await loadLogs();
+    alert(`判定結果: ${REPLY_LABELS[data.reply_status]||data.reply_status}`);
+  } catch { alert('エラーが発生しました'); }
+  finally { btn.disabled = false; btn.innerHTML = '💾 保存・判定'; }
+}
+function showReplyContent(logId) {
+  const log = allLogs.find(l => l.id === logId);
+  if (log?.reply_content) alert(`【返信内容】\n\n${log.reply_content}`);
+}
+
+// ─── ⑤ ブラックリスト ───
+async function loadBlacklist() {
+  const data = await (await fetch(`${API}/blacklist`)).json();
+  const tbody = document.getElementById('bl-body');
+  if (!data.length) { tbody.innerHTML = '<tr><td colspan="3"><div class="empty"><div class="big">✅</div><p>空です</p></div></td></tr>'; return; }
+  tbody.innerHTML = data.map(b =>
+    `<tr><td class="domain">${escHtml(b.domain)}</td><td style="font-size:13px;color:#6b7280">${escHtml(b.reason||'-')}</td><td style="font-size:12px;color:#9ca3af">${b.added_at}</td></tr>`
+  ).join('');
+}
+async function addBlacklist() {
+  const domain = document.getElementById('bl-domain').value.trim();
+  const reason = document.getElementById('bl-reason').value.trim();
+  if (!domain) return;
+  await fetchJSON('/blacklist', 'POST', { domain, reason });
+  document.getElementById('bl-domain').value = ''; document.getElementById('bl-reason').value = '';
+  loadBlacklist();
+}
+
+// ─── Util ───
+async function fetchJSON(path, method = 'GET', body) {
+  const opts = { method, headers: {'Content-Type':'application/json'} };
+  if (body) opts.body = JSON.stringify(body);
+  return (await fetch(API + path, opts)).json();
+}
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+async function updateBadges() {
+  try {
+    const data = await (await fetch(`${API}/companies?limit=500`)).json();
+    document.getElementById('badge-companies').textContent = data.filter(c => c.status !== 'sent').length;
+  } catch {}
+}
+
+updateBadges();
+</script>
+</body>
+</html>
