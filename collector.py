@@ -10,7 +10,7 @@ DuckDuckGo検索でターゲット企業URLを収集し、
 import httpx
 from urllib.parse import urlparse
 from urllib.robotparser import RobotFileParser
-from ddgs import DDGS
+from duckduckgo_search import DDGS
 from database import get_conn, init_db
 
 # ────────────────────────────────────────────
