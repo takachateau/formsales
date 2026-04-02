@@ -257,7 +257,7 @@ def check_has_form(url: str) -> bool:
 
 
 def search_ddg(query: str, num: int = 10) -> list[dict]:
-    """DuckDuckGo で検索して結果リストを返す（日本語・日本地域に限定）"""
+    """DuckDuckGo で検索（ローカル用フォールバック）"""
     try:
         results = DDGS().text(
             query + " site:co.jp OR site:jp",
@@ -268,6 +268,32 @@ def search_ddg(query: str, num: int = 10) -> list[dict]:
     except Exception as e:
         print(f"[DDG] 検索エラー: {e}")
         return []
+
+
+def search_serpapi(query: str, num: int = 10) -> list[dict]:
+    """SerpAPI で検索（Railway本番用）"""
+    try:
+        from serpapi import GoogleSearch
+        params = {
+            "q": query + " site:co.jp OR site:jp",
+            "hl": "ja",
+            "gl": "jp",
+            "num": min(num * 2, 10),
+            "api_key": os.getenv("SERPAPI_KEY", ""),
+        }
+        search = GoogleSearch(params)
+        results = search.get_dict().get("organic_results", [])
+        return [{"link": r.get("link", ""), "title": r.get("title", "")} for r in results]
+    except Exception as e:
+        print(f"[SerpAPI] 検索エラー: {e}")
+        return []
+
+
+def search(query: str, num: int = 10) -> list[dict]:
+    """SerpAPIが設定されていればSerpAPI、なければDDGを使う"""
+    if os.getenv("SERPAPI_KEY"):
+        return search_serpapi(query, num)
+    return search_ddg(query, num)
 
 
 def is_japanese_domain(domain: str) -> bool:
@@ -299,8 +325,8 @@ def collect(industry: str, count: int = 30) -> dict:
         if saved >= count:
             break
 
-        print(f"[DDG] 検索: {query}")
-        items = search_ddg(query, num=count)
+        print(f"[Search] 検索: {query}")
+        items = search(query, num=count)
 
         for item in items:
             if saved >= count:
