@@ -436,6 +436,25 @@ def api_blacklist_list():
     return [dict(r) for r in rows]
 
 
+@app.get("/debug/search")
+def api_debug_search(q: str = "Web制作会社 東京 お問い合わせ site:co.jp"):
+    """Google CSE の動作確認用（デバッグ専用）"""
+    import os, httpx
+    api_key = os.getenv("GOOGLE_CSE_API_KEY", "")
+    cx = os.getenv("GOOGLE_CSE_CX", "")
+    if not api_key or not cx:
+        return {"error": "環境変数未設定", "GOOGLE_CSE_API_KEY": bool(api_key), "GOOGLE_CSE_CX": bool(cx)}
+    try:
+        resp = httpx.get(
+            "https://www.googleapis.com/customsearch/v1",
+            params={"key": api_key, "cx": cx, "q": q, "num": 5},
+            timeout=10,
+        )
+        return {"status": resp.status_code, "body": resp.json()}
+    except Exception as e:
+        return {"error": str(e)}
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8010, reload=True)
